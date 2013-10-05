@@ -1,0 +1,7 @@
+name: reactive_keyboard
+version: 0.1.0
+author: Chris Jones
+description: Helper library for handling Keyboard streams.
+dependencies:
+  browser: any
+  merge_all: any
