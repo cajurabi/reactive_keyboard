@@ -7,6 +7,22 @@ import 'package:merge_all/merge_all.dart';
 
 
 class ReactiveKeyboard {
+  final Element _target;
+  final Stream<KeyEvent> rawKeyCombinedStream;
+  final Stream<KeyEvent> rawKeyUpStream;
+  final Stream<KeyEvent> rawKeyDownStream;
+  final Stream<KeyEvent> rawKeyPressStream;
+
+  bool allowShiftOnlyHotKeys;
+  bool allowAltKeyPress;
+  Map<KeyCode, int> navKeys;
+  List<int> delKeys;
+
+  Stream<String> _keyStream;
+  Stream<String> _lineStream;
+  Stream<int>    _navStream;
+  Stream<String> _hotKeyStream;
+
   // DOM event types consts
   static const String KEY_PRESS = 'keypress';
   static const String KEY_UP    = 'keyup';
@@ -21,6 +37,8 @@ class ReactiveKeyboard {
   static const int SW = 225;
   static const int W  = 270;
   static const int NW = 315;
+
+  static const List<int> DEFAULT_DEL_KEYS = const [KeyCode.DELETE, KeyCode.BACKSPACE, KeyCode.NUM_DELETE];
 
   static const Map<int, int> NUM_NAV = const {
     KeyCode.NUM_NORTH      : N,
@@ -108,49 +126,29 @@ class ReactiveKeyboard {
     KeyCode.SINGLE_QUOTE: "'"
   };
 
-  final Element _target;
-  final Map<KeyCode, int> navKeys;
-
-  final Stream<KeyEvent> rawKeyCombinedStream;
-  final Stream<KeyEvent> rawKeyUpStream;
-  final Stream<KeyEvent> rawKeyDownStream;
-  final Stream<KeyEvent> rawKeyPressStream;
-
-  bool allowShiftOnlyHotKeys;
-  bool allowAltKeyPress;
-
-  Stream<String> _keyStream;
-  Stream<String> _lineStream;
-  Stream<int>    _navStream;
-  Stream<String> _hotKeyStream;
 
   factory ReactiveKeyboard(
       Element target, {
         bool allowShiftOnlyHotKeys: false,
         bool allowAltKeyPress: false,
-        Map<int, int> navKeys
+        Map<int, int> navKeys: NUM_NAV,
+        List<int> delKeys: DEFAULT_DEL_KEYS
       }) {
     var rkp = KeyboardEventStream.onKeyPress(target);
     var rku = KeyboardEventStream.onKeyUp(target);
     var rkd = KeyboardEventStream.onKeyDown(target).map((key) {
-      if (   key.keyCode == KeyCode.BACKSPACE
-          || key.keyCode == KeyCode.DELETE
-          || key.keyCode == KeyCode.NUM_DELETE) {
+      if ( delKeys.contains(key.keyCode)) {
         key.preventDefault();
       }
 
       return key;
     });
 
-    if (navKeys == null) {
-      navKeys = NUM_NAV;
-    }
-
     var rkc = rkp.transform(new MergeAll(3, [rku, rkd])).asBroadcastStream();
 
     return new ReactiveKeyboard._(target, rkp, rku, rkd, rkc,
         allowShiftOnlyHotKeys: allowShiftOnlyHotKeys,
-        allowAltKeyPress: allowAltKeyPress, navKeys: navKeys);
+        allowAltKeyPress: allowAltKeyPress, navKeys: navKeys, delKeys: delKeys);
   }
 
 
@@ -160,10 +158,11 @@ class ReactiveKeyboard {
       this.rawKeyUpStream,
       this.rawKeyDownStream,
       this.rawKeyCombinedStream,
-      { allowShiftOnlyHotKeys, allowAltKeyPress, navKeys })
+      { allowShiftOnlyHotKeys, allowAltKeyPress, navKeys, delKeys })
           : this.allowShiftOnlyHotKeys = allowShiftOnlyHotKeys,
             this.allowAltKeyPress = allowAltKeyPress,
-            this.navKeys = navKeys;
+            this.navKeys = navKeys,
+            this.delKeys = delKeys;
 
 
   Stream<String> get keyStream {
@@ -191,9 +190,14 @@ class ReactiveKeyboard {
         lineTransformer = new StreamTransformer(handleData: (key, sink) {
           if (key.type == KEY_PRESS) {
             _line += new String.fromCharCode(key.charCode);
-          } else if (key.type == KEY_DOWN && key.keyCode == KeyCode.ENTER) {
-            sink.add(_line);
-            _line = '';
+          } else if (key.type == KEY_DOWN) {
+            if (delKeys.contains(key.keyCode)) {
+              _line = _line.substring(0, _line.length - 1);
+            } else if (key.keyCode == KeyCode.ENTER
+                || key.keyCode == KeyCode.MAC_ENTER) {
+              sink.add(_line);
+              _line = '';
+            }
           }
         });
       }
