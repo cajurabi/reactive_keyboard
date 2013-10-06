@@ -156,6 +156,7 @@ class ReactiveKeyboard {
         List<int> delKeys: DEFAULT_DEL_KEYS
       })
   {
+    //@todo: make sure we don't need to do anything special for input or textareas
     var rkp = KeyboardEventStream.onKeyPress(target);
     var rku = KeyboardEventStream.onKeyUp(target);
     var rkd = KeyboardEventStream.onKeyDown(target).map((key) {
@@ -209,7 +210,7 @@ class ReactiveKeyboard {
         return (key.type == KEY_PRESS && !key.ctrlKey
             && ( !key.altKey || (allowAltKeyPress && key.altKey))
             && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode)));
-      }).map(key => new String.fromCharCode(key.charCode));
+      }).map((key) => new String.fromCharCode(key.charCode));
     }
 
     return _keyStream;
