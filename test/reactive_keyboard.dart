@@ -12,8 +12,8 @@ void main() {
 
   keyboard.changes.listen((records) {
     for (var record in records) {
-      if (record.changes(new Symbol('lineBuffer'))) {
-        print(keyboard.lineBuffer);
+      if (record.changes(new Symbol('htmlLineBuffer'))) {
+        print(keyboard.htmlLineBuffer);
       }
     }
   });

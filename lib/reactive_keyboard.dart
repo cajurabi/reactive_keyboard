@@ -22,6 +22,7 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   List<int> delKeys;
 
   String _lineBuffer = '';
+  String _htmlLineBuffer = '';
 
   Stream<String> _keyStream;
   Stream<String> _lineStream;
@@ -213,9 +214,29 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    *
    * The string is an observable buffer for the lineStream.  Set triggers change
    */
-  set lineBuffer(line) =>
+  set lineBuffer(line) {
       _lineBuffer = notifyPropertyChange(const Symbol('lineBuffer'),
           _lineBuffer, line);
+
+      htmlLineBuffer = new HtmlEscape().convert(line).replaceAll(' ', '&nbsp;');
+  }
+
+  /**
+   * A getter for `htmlLineBuffer`.
+   *
+   * The string is an observable buffer for the lineStream
+   */
+  String get htmlLineBuffer => _htmlLineBuffer;
+
+  /**
+   * A setter for `htmlLineBuffer`.
+   *
+   * The string is an observable buffer for the lineStream.  Set triggers change
+   */
+  set htmlLineBuffer(line) =>
+      _htmlLineBuffer = notifyPropertyChange(const Symbol('htmlLineBuffer'),
+          _htmlLineBuffer, line);
+
 
 
 
