@@ -204,17 +204,12 @@ class ReactiveKeyboard {
    * in the constructor
    */
   Stream<String> get keyStream {
-    // @todo: use a #where() instead of a StreamTransformer
     if (_keyStream == null) {
-      var keyTransformer = new StreamTransformer(handleData: (key, sink) {
-        if (key.type == KEY_PRESS && !key.ctrlKey
+      _keyStream = rawKeyCombinedStream.where((key) {
+        return (key.type == KEY_PRESS && !key.ctrlKey
             && ( !key.altKey || (allowAltKeyPress && key.altKey))
-            && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
-          sink.add(new String.fromCharCode(key.charCode));
-        }
-      });
-
-      _keyStream = rawKeyCombinedStream.transform(keyTransformer);
+            && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode)));
+      }).map(key => new String.fromCharCode(key.charCode));
     }
 
     return _keyStream;
@@ -275,17 +270,10 @@ class ReactiveKeyboard {
    * `navKeys` parameter used to construct this object.
    */
   Stream<int> get navStream {
-    // @todo: User a #where() instead of a StreamTransformer
     if (_navStream == null) {
-      var navTransformer = new StreamTransformer(handleData: (key, sink) {
-        if (key.type == KEY_DOWN) {
-          if (navKeys.containsKey(key.keyCode)) {
-            sink.add(navKeys[key.keyCode]);
-          }
-        }
-      });
-
-      _navStream = rawKeyCombinedStream.transform(navTransformer);
+      _navStream = rawKeyCombinedStream.where((key) {
+        return key.type == KEY_DOWN && navKeys.containsKey(key.keyCode);
+      }).map((key) => navKeys[key.keyCode]);
     }
 
     return _navStream;
