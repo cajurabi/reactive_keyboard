@@ -1,5 +1,5 @@
 name: reactive_keyboard
-version: 0.1.2
+version: 0.1.4
 author: Chris Jones
 description: Helper library for handling Keyboard streams.
 dependencies:

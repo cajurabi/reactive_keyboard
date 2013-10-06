@@ -2,7 +2,7 @@ library reactive_keyboard;
 
 import 'dart:html';
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:merge_all/merge_all.dart';
 
 
@@ -103,7 +103,7 @@ class ReactiveKeyboard {
     KeyCode.CLOSE_SQUARE_BRACKET: ']',
     KeyCode.COMMA: ',',
     KeyCode.SEMICOLON: ';',
-    KeyCode.BACKSLASH: r'\\',
+    KeyCode.BACKSLASH: '\\',
     KeyCode.SLASH: '/',
     KeyCode.DASH: '-',
     KeyCode.DELETE: 'delete',
@@ -219,6 +219,16 @@ class ReactiveKeyboard {
 
     return _keyStream;
   }
+
+  /**
+   * A getter for `htmlKeyStream`.
+   *
+   * The stream returned will include all key press events except for the
+   * control key and only the alt key if `allowAltKeyPress` was set to true
+   * in the constructor, along with HTML characters escaped for easy printing
+   */
+  Stream<String> get htmlKeyStream => keyStream.transform(new HtmlEscape())
+      .map((str) => str == ' ' ? '&nbsp;' : str );
 
   /**
    * A getter for `lineStream`
