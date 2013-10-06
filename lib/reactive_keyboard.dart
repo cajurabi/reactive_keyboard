@@ -174,7 +174,8 @@ class ReactiveKeyboard {
     if (_keyStream == null) {
       var keyTransformer = new StreamTransformer(handleData: (key, sink) {
         if (key.type == KEY_PRESS && !key.ctrlKey
-            && ( !key.altKey || (allowAltKeyPress && key.altKey))) {
+            && ( !key.altKey || (allowAltKeyPress && key.altKey))
+            && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
           sink.add(new String.fromCharCode(key.charCode));
         }
       });
