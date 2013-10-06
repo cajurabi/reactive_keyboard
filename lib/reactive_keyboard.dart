@@ -273,7 +273,7 @@ class ReactiveKeyboard {
     if (_navStream == null) {
       _navStream = rawKeyCombinedStream.where((key) {
         return key.type == KEY_DOWN && navKeys.containsKey(key.keyCode);
-      });
+      }).map((key) => navKeys[key.keyCode]);
     }
 
     return _navStream;
