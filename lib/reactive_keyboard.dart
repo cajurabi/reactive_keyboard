@@ -103,7 +103,7 @@ class ReactiveKeyboard {
     KeyCode.CLOSE_SQUARE_BRACKET: ']',
     KeyCode.COMMA: ',',
     KeyCode.SEMICOLON: ';',
-    KeyCode.BACKSLASH: r'\',
+    KeyCode.BACKSLASH: r'\\',
     KeyCode.SLASH: '/',
     KeyCode.DASH: '-',
     KeyCode.DELETE: 'delete',
@@ -130,6 +130,23 @@ class ReactiveKeyboard {
   };
 
 
+  /**
+   * The Factory constructor for making a new ReactiveKeyboard object
+   *
+   * Takes a target element to observe keyboard events from and some named
+   * parameters to aid in the configuration of the ReactiveKeyboard. Optional
+   * named argmuments are as follows:
+   *  * allowShiftOnlyHotKeys = false: Whether or not to capture shift only
+   *    hot key modifiers
+   *  * allowAltKeyPress = false: Whether or not to allow `alt` key presses
+   *    through the `keyStream`
+   *  * allowEnterKeyPress = false: Whether or not to include the enter key
+   *    as part of the line for the `lineStream`
+   *  * navKeys = NUM_NAV: A map of keys to filter for in the `navStream`
+   *  * delKeys = DEFAULT_DEL_KEYS
+   *
+   *     var keyboard = new ReactiveKeyboard(query("body"))
+   */
   factory ReactiveKeyboard(
       Element target, {
         bool allowShiftOnlyHotKeys: false,
@@ -137,7 +154,8 @@ class ReactiveKeyboard {
         bool allowEnterKeyPress: false,
         Map<int, int> navKeys: NUM_NAV,
         List<int> delKeys: DEFAULT_DEL_KEYS
-      }) {
+      })
+  {
     var rkp = KeyboardEventStream.onKeyPress(target);
     var rku = KeyboardEventStream.onKeyUp(target);
     var rkd = KeyboardEventStream.onKeyDown(target).map((key) {
@@ -150,9 +168,18 @@ class ReactiveKeyboard {
 
     var rkc = rkp.transform(new MergeAll(3, [rku, rkd])).asBroadcastStream();
 
-    return new ReactiveKeyboard._(target, rkp, rku, rkd, rkc,
-        allowShiftOnlyHotKeys: allowShiftOnlyHotKeys,
-        allowAltKeyPress: allowAltKeyPress, allowEnterKeyPress: allowEnterKeyPress, navKeys: navKeys, delKeys: delKeys);
+    return new ReactiveKeyboard._(
+      target,
+      rkp,
+      rku,
+      rkd,
+      rkc,
+      allowShiftOnlyHotKeys: allowShiftOnlyHotKeys,
+      allowAltKeyPress: allowAltKeyPress,
+      allowEnterKeyPress: allowEnterKeyPress,
+      navKeys: navKeys,
+      delKeys: delKeys
+    );
   }
 
 
@@ -169,8 +196,15 @@ class ReactiveKeyboard {
             this.navKeys = navKeys,
             this.delKeys = delKeys;
 
-
+  /**
+   * A getter for `keyStream`.
+   *
+   * The stream returned will include all key press events except for the
+   * control key and only the alt key if `allowAltKeyPress` was set to true
+   * in the constructor
+   */
   Stream<String> get keyStream {
+    // @todo: use a #where() instead of a StreamTransformer
     if (_keyStream == null) {
       var keyTransformer = new StreamTransformer(handleData: (key, sink) {
         if (key.type == KEY_PRESS && !key.ctrlKey
@@ -186,7 +220,16 @@ class ReactiveKeyboard {
     return _keyStream;
   }
 
-
+  /**
+   * A getter for `lineStream`
+   *
+   * The stream returned will be a stream of lines that will be the buffered
+   * keyboard input up until an enter key was pressed. This stream will also
+   * correctly handle deletion keys by removing the propper characters from
+   * the buffered input. If the `allowEnterKeyPress` was set to true in the
+   * construction of this object then the buffered lines will contain the
+   * trailing enter keys.
+   */
   Stream<String> get lineStream {
     if (_lineStream == null) {
       var lineTransformer;
@@ -215,11 +258,15 @@ class ReactiveKeyboard {
     return _lineStream;
   }
 
-
+  /**
+   * A getter for the `navStram`
+   *
+   * The stream returned will only consist of the ones specified in the
+   * `navKeys` parameter used to construct this object.
+   */
   Stream<int> get navStream {
+    // @todo: User a #where() instead of a StreamTransformer
     if (_navStream == null) {
-      var azimuth;
-
       var navTransformer = new StreamTransformer(handleData: (key, sink) {
         if (key.type == KEY_DOWN) {
           if (navKeys.containsKey(key.keyCode)) {
@@ -235,6 +282,13 @@ class ReactiveKeyboard {
   }
 
 
+  /**
+   * A getter for the `hotKeyStream`
+   *
+   * The stream returned will be a stream of strings such that each string
+   * emitted will be the human readable representation of the key presses
+   * such that they are prefixed by their modifiers.
+   */
   Stream<String> get hotKeyStream {
     if (_hotKeyStream == null) {
       var hotKeyTransformer = new StreamTransformer(handleData: (KeyEvent key, sink) {
