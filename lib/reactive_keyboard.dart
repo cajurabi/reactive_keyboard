@@ -103,7 +103,7 @@ class ReactiveKeyboard {
     KeyCode.CLOSE_SQUARE_BRACKET: ']',
     KeyCode.COMMA: ',',
     KeyCode.SEMICOLON: ';',
-    KeyCode.BACKSLASH: r"\\",
+    KeyCode.BACKSLASH: r'\\',
     KeyCode.SLASH: '/',
     KeyCode.DASH: '-',
     KeyCode.DELETE: 'delete',
