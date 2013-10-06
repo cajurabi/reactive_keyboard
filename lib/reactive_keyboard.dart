@@ -15,6 +15,7 @@ class ReactiveKeyboard {
 
   bool allowShiftOnlyHotKeys;
   bool allowAltKeyPress;
+  bool allowEnterKeyPress;
   Map<KeyCode, int> navKeys;
   List<int> delKeys;
 
@@ -82,6 +83,8 @@ class ReactiveKeyboard {
     KeyCode.D             : E
   };
 
+  static const List<int> _ENTER_KEYS = const [KeyCode.ENTER, KeyCode.MAC_ENTER];
+
   static const Map<int, String> _SPECIAL_KEYS = const {
     KeyCode.F1: 'F1',
     KeyCode.F2: 'F2',
@@ -131,6 +134,7 @@ class ReactiveKeyboard {
       Element target, {
         bool allowShiftOnlyHotKeys: false,
         bool allowAltKeyPress: false,
+        bool allowEnterKeyPress: false,
         Map<int, int> navKeys: NUM_NAV,
         List<int> delKeys: DEFAULT_DEL_KEYS
       }) {
@@ -148,7 +152,7 @@ class ReactiveKeyboard {
 
     return new ReactiveKeyboard._(target, rkp, rku, rkd, rkc,
         allowShiftOnlyHotKeys: allowShiftOnlyHotKeys,
-        allowAltKeyPress: allowAltKeyPress, navKeys: navKeys, delKeys: delKeys);
+        allowAltKeyPress: allowAltKeyPress, allowEnterKeyPress: allowEnterKeyPress, navKeys: navKeys, delKeys: delKeys);
   }
 
 
@@ -158,9 +162,10 @@ class ReactiveKeyboard {
       this.rawKeyUpStream,
       this.rawKeyDownStream,
       this.rawKeyCombinedStream,
-      { allowShiftOnlyHotKeys, allowAltKeyPress, navKeys, delKeys })
+      { allowShiftOnlyHotKeys, allowAltKeyPress, allowEnterKeyPress, navKeys, delKeys })
           : this.allowShiftOnlyHotKeys = allowShiftOnlyHotKeys,
             this.allowAltKeyPress = allowAltKeyPress,
+            this.allowEnterKeyPress = allowEnterKeyPress,
             this.navKeys = navKeys,
             this.delKeys = delKeys;
 
@@ -188,10 +193,11 @@ class ReactiveKeyboard {
         var _line = '';
 
         lineTransformer = new StreamTransformer(handleData: (key, sink) {
-          if (key.type == KEY_PRESS) {
+          if (key.type == KEY_PRESS
+              && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
             _line += new String.fromCharCode(key.charCode);
           } else if (key.type == KEY_DOWN) {
-            if (delKeys.contains(key.keyCode)) {
+            if (_line.length > 0 && delKeys.contains(key.keyCode)) {
               _line = _line.substring(0, _line.length - 1);
             } else if (key.keyCode == KeyCode.ENTER
                 || key.keyCode == KeyCode.MAC_ENTER) {

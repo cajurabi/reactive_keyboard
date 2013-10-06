@@ -18,5 +18,11 @@ void main() {
 }
 
 ```
+## HotKeys
 
+How to list for specific HotKey:
+
+```dart
+keyboard.hotKeyStream.where((hk) => hk == 'ctrl+C').listen((str) => print("BREAK!"));
+```
 
