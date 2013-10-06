@@ -3,10 +3,12 @@ library reactive_keyboard;
 import 'dart:html';
 import 'dart:async';
 import 'dart:convert';
+import 'package:observe/observe.dart';
+
 import 'package:merge_all/merge_all.dart';
 
 
-class ReactiveKeyboard {
+class ReactiveKeyboard extends ChangeNotifierMixin {
   final Element _target;
   final Stream<KeyEvent> rawKeyCombinedStream;
   final Stream<KeyEvent> rawKeyUpStream;
@@ -18,6 +20,8 @@ class ReactiveKeyboard {
   bool allowEnterKeyPress;
   Map<KeyCode, int> navKeys;
   List<int> delKeys;
+
+  String _lineBuffer = '';
 
   Stream<String> _keyStream;
   Stream<String> _lineStream;
@@ -198,6 +202,24 @@ class ReactiveKeyboard {
             this.delKeys = delKeys;
 
   /**
+   * A getter for `lineBuffer`.
+   *
+   * The string is an observable buffer for the lineStream
+   */
+  String get lineBuffer => _lineBuffer;
+
+  /**
+   * A setter for `lineBuffer`.
+   *
+   * The string is an observable buffer for the lineStream.  Set triggers change
+   */
+  set lineBuffer(line) =>
+      _lineBuffer = notifyPropertyChange(const Symbol('lineBuffer'),
+          _lineBuffer, line);
+
+
+
+  /**
    * A getter for `keyStream`.
    *
    * The stream returned will include all key press events except for the
@@ -240,19 +262,18 @@ class ReactiveKeyboard {
     if (_lineStream == null) {
       var lineTransformer;
       {
-        var _line = '';
+        var THIS = this;
 
         lineTransformer = new StreamTransformer(handleData: (key, sink) {
           if (key.type == KEY_PRESS
               && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
-            _line += new String.fromCharCode(key.charCode);
+            THIS.lineBuffer += new String.fromCharCode(key.charCode);
           } else if (key.type == KEY_DOWN) {
-            if (_line.length > 0 && delKeys.contains(key.keyCode)) {
-              _line = _line.substring(0, _line.length - 1);
-            } else if (key.keyCode == KeyCode.ENTER
-                || key.keyCode == KeyCode.MAC_ENTER) {
-              sink.add(_line);
-              _line = '';
+            if (THIS.lineBuffer.length > 0 && delKeys.contains(key.keyCode)) {
+              THIS.lineBuffer = THIS.lineBuffer.substring(0, THIS.lineBuffer.length - 1);
+            } else if (_ENTER_KEYS.contains(key.keyCode)) {
+              sink.add(THIS.lineBuffer);
+              THIS.lineBuffer = '';
             }
           }
         });
