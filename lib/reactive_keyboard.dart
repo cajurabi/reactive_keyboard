@@ -25,7 +25,6 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   String _htmlLineBuffer = '';
 
   Stream<String> _keyStream;
-  Stream<String> _lineStream;
   Stream<int>    _navStream;
   Stream<String> _hotKeyStream;
 
@@ -218,10 +217,13 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * The string is an observable buffer for the lineStream.  Set triggers change
    */
   set lineBuffer(line) {
+    if (line != _lineBuffer) {
       _lineBuffer = notifyPropertyChange(const Symbol('lineBuffer'),
           _lineBuffer, line);
 
-      htmlLineBuffer = new HtmlEscape().convert(line).replaceAll(' ', '&nbsp;');
+      _htmlLineBuffer = notifyPropertyChange(const Symbol('htmlLineBuffer'),
+          _htmlLineBuffer, new HtmlEscape().convert(line).replaceAll(' ', '&nbsp;'));
+    }
   }
 
   /**
@@ -230,17 +232,6 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * The string is an observable buffer for the lineStream
    */
   String get htmlLineBuffer => _htmlLineBuffer;
-
-  /**
-   * A setter for `htmlLineBuffer`.
-   *
-   * The string is an observable buffer for the lineStream.  Set triggers change
-   */
-  set htmlLineBuffer(line) =>
-      _htmlLineBuffer = notifyPropertyChange(const Symbol('htmlLineBuffer'),
-          _htmlLineBuffer, line);
-
-
 
 
   /**
@@ -283,9 +274,9 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * construction of this object then the buffered lines will contain the
    * trailing enter keys.
    */
-  Stream<String> get htmlLineStream => lineStream.transform(new HtmlEscape())
-      .map((str) => str.replaceAll(' ', '&nbsp;') );
-
+  Stream<String> get htmlLineStream =>
+      lineStream.transform(new HtmlEscape()).map((str) =>
+          str.replaceAll(' ', '&nbsp;'));
 
   /**
    * A getter for `lineStream`
@@ -298,31 +289,29 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * trailing enter keys.
    */
   Stream<String> get lineStream {
-    if (_lineStream == null) {
-      var lineTransformer;
-      {
-        var THIS = this;
+    var lineTransformer;
+    {
+      var _line = lineBuffer;
+      var THIS = this;
 
-        lineTransformer = new StreamTransformer(handleData: (key, sink) {
-          if (key.type == KEY_PRESS
-              && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
-            THIS.lineBuffer += new String.fromCharCode(key.charCode);
-          } else if (key.type == KEY_DOWN) {
-            if (THIS.lineBuffer.length > 0 && delKeys.contains(key.keyCode)) {
-              THIS.lineBuffer = THIS.lineBuffer.substring(0, THIS.lineBuffer.length - 1);
-            } else if (_ENTER_KEYS.contains(key.keyCode)) {
-              sink.add(THIS.lineBuffer);
-              THIS.lineBuffer = '';
-            }
+      lineTransformer = new StreamTransformer(handleData: (key, sink) {
+        if (key.type == KEY_PRESS
+            && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
+          THIS.lineBuffer = _line += new String.fromCharCode(key.charCode);
+        } else if (key.type == KEY_DOWN) {
+          if (_line.length > 0 && delKeys.contains(key.keyCode)) {
+            THIS.lineBuffer = _line = _line.substring(0, _line.length - 1);
+          } else if (_ENTER_KEYS.contains(key.keyCode)) {
+            sink.add(_line);
+            THIS.lineBuffer = _line = '';
           }
-        });
-      }
-
-      _lineStream = rawKeyCombinedStream.transform(lineTransformer);
+        }
+      });
     }
 
-    return _lineStream;
+    return  rawKeyCombinedStream.transform(lineTransformer);
   }
+
 
   /**
    * A getter for the `navStram`
