@@ -272,6 +272,21 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   Stream<String> get htmlKeyStream => keyStream.transform(new HtmlEscape())
       .map((str) => str == ' ' ? '&nbsp;' : str );
 
+
+  /**
+   * A getter for `htmlLineStream`
+   *
+   * The stream returned will be a stream of lines that will be the buffered
+   * keyboard input up until an enter key was pressed. This stream will also
+   * correctly handle deletion keys by removing the propper characters from
+   * the buffered input. If the `allowEnterKeyPress` was set to true in the
+   * construction of this object then the buffered lines will contain the
+   * trailing enter keys.
+   */
+  Stream<String> get htmlLineStream => lineStream.transform(new HtmlEscape())
+      .map((str) => str.replaceAll(' ', '&nbsp;') );
+
+
   /**
    * A getter for `lineStream`
    *
