@@ -90,6 +90,23 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
 
   static const List<int> _ENTER_KEYS = const [KeyCode.ENTER, KeyCode.MAC_ENTER];
 
+  static const Map<int, String> _COMBO_KEYS = const {
+    KeyCode.OPEN_SQUARE_BRACKET: '[',
+    KeyCode.CLOSE_SQUARE_BRACKET: ']',
+    KeyCode.COMMA: ',',
+    KeyCode.SEMICOLON: ';',
+    KeyCode.BACKSLASH: '\\',
+    KeyCode.SLASH: '/',
+    KeyCode.DASH: '-',
+    KeyCode.APOSTROPHE: "`",
+    KeyCode.EQUALS: '=',
+    KeyCode.FF_EQUALS: '=',
+    KeyCode.FF_SEMICOLON: ';',
+    KeyCode.PERIOD: '.',
+    KeyCode.QUESTION_MARK: '?',
+    KeyCode.SINGLE_QUOTE: "'"
+  };
+
   static const Map<int, String> _SPECIAL_KEYS = const {
     KeyCode.F1: 'F1',
     KeyCode.F2: 'F2',
@@ -104,22 +121,9 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
     KeyCode.F11: 'F11',
     KeyCode.F12: 'F12',
     KeyCode.TAB: 'tab',
-    KeyCode.OPEN_SQUARE_BRACKET: '[',
-    KeyCode.CLOSE_SQUARE_BRACKET: ']',
-    KeyCode.COMMA: ',',
-    KeyCode.SEMICOLON: ';',
-    KeyCode.BACKSLASH: '\\',
-    KeyCode.SLASH: '/',
-    KeyCode.DASH: '-',
-    KeyCode.DELETE: 'delete',
-    KeyCode.BACKSPACE: 'delete',
     KeyCode.END: 'end',
     KeyCode.HOME: 'home',
-    KeyCode.APOSTROPHE: "`",
-    KeyCode.EQUALS: '=',
     KeyCode.ESC: 'esc',
-    KeyCode.FF_EQUALS: '=',
-    KeyCode.FF_SEMICOLON: ';',
     KeyCode.INSERT: 'insert',
     KeyCode.LEFT: 'left',
     KeyCode.RIGHT: 'right',
@@ -127,11 +131,10 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
     KeyCode.DOWN: 'down',
     KeyCode.PAGE_DOWN: 'pagedown',
     KeyCode.PAGE_UP: 'pageup',
-    KeyCode.PERIOD: '.',
-    KeyCode.QUESTION_MARK: '?',
     KeyCode.PAUSE: 'pause',
     KeyCode.PRINT_SCREEN: 'printscreen',
-    KeyCode.SINGLE_QUOTE: "'"
+    KeyCode.DELETE: 'delete',
+    KeyCode.BACKSPACE: 'delete'
   };
 
 
@@ -142,7 +145,7 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * parameters to aid in the configuration of the ReactiveKeyboard. Optional
    * named argmuments are as follows:
    *  * allowShiftOnlyHotKeys = false: Whether or not to capture shift only
-   *    hot key modifiers
+   *    hot key modifiers--excludes shift+_SPECIAL_KEYS
    *  * allowAltKeyPress = false: Whether or not to allow `alt` key presses
    *    through the `keyStream`
    *  * allowEnterKeyPress = false: Whether or not to include the enter key
@@ -348,12 +351,12 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
           if (key.metaKey) {
             hk += 'meta+';
           }
-          if (key.shiftKey && (hk.length > 0 || allowShiftOnlyHotKeys)) {
+          if (key.shiftKey) {
             hk += 'shift+';
           }
 
-          if (hk.length > 0
-              && (
+          if (hk.length > 0) {
+            if ((
                 key.keyCode >= 'A'.codeUnitAt(0)
                 && key.keyCode <= 'Z'.codeUnitAt(0)
               ) ||
@@ -362,12 +365,16 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
                 && key.keyCode <= '9'.codeUnitAt(0)
               )
              ) {
-            hk += new String.fromCharCode(key.keyCode);
-          } else if (hk.length > 0) {
-            // Check for Function keys, etc.
-              if (_SPECIAL_KEYS.containsKey(key.keyCode)) {
-                hk += _SPECIAL_KEYS[key.keyCode];
+              hk += new String.fromCharCode(key.keyCode);
+            } else if (_COMBO_KEYS.containsKey(key.keyCode)) {
+              hk += _COMBO_KEYS[key.keyCode];
             }
+          }
+
+          if (_SPECIAL_KEYS.containsKey(key.keyCode)) {
+            hk += _SPECIAL_KEYS[key.keyCode];
+          } else if (!allowShiftOnlyHotKeys && hk.startsWith('shift+')) {
+            hk = '';
           }
 
           if (hk.length > 0 && !hk.endsWith('+')) {
