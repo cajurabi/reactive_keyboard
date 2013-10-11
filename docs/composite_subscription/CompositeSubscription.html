@@ -1,0 +1,156 @@
+        <!DOCTYPE html>
+        <html>
+        <head>
+                <meta charset="utf-8">
+        <title>CompositeSubscription class / composite_subscription Library / Dart Documentation</title>
+        <link rel="stylesheet" type="text/css"
+            href="../styles.css">
+        <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,700,800" rel="stylesheet" type="text/css">
+        <link rel="shortcut icon" href="../favicon.ico">
+        
+        </head>
+        <body data-library="composite_subscription" data-type="CompositeSubscription">
+        <div class="page">
+        <div class="header">
+          <a href="../index.html"><div class="logo"></div></a>
+          <a href="../index.html">Dart Documentation</a>
+         &rsaquo; <a href="../composite_subscription.html">composite_subscription</a> &rsaquo; <a href="../composite_subscription/CompositeSubscription.html">CompositeSubscription</a>        <div id="search-box">
+          <input type="search" name="q" id="q" autocomplete="off"
+              class="search-input" placeholder="Search API">
+        </div>
+        
+      </div>
+      <div class="drop-down" id="drop-down"></div>
+      
+        <div class="nav">
+        
+</div>
+<div class="content">
+        <h2><strong>CompositeSubscription</strong>
+          class
+        </h2>
+        
+<button id="show-inherited" class="show-inherited">Hide inherited</button>
+<div class="doc">
+<pre class="source">
+class CompositeSubscription {
+
+ List&lt;StreamSubscription&gt; _subscriptions = [];
+
+ void cancel() {
+   for (var n in this._subscriptions) {
+     n.cancel();
+   }
+   this._subscriptions = [];
+ }
+
+ CompositeSubscription add(StreamSubscription subscription) {
+   this._subscriptions.add(subscription);
+   return this;
+ }
+
+ bool remove(StreamSubscription subscription) {
+   var index = this._subscriptions.indexOf(subscription);
+   if (index != -1) {
+     this._subscriptions.removeAt(index);
+     subscription.cancel();
+     return true;
+   } else {
+     return false;
+   }
+ }
+
+ bool contains(StreamSubscription subscription) {
+   return this._subscriptions.contains(subscription);
+ }
+
+ List&lt;StreamSubscription&gt; toList() {
+   return this._subscriptions;
+ }
+
+}
+</pre>
+</div>
+<div>
+<h3>Methods</h3>
+<div class="method"><h4 id="add">
+<button class="show-code">Code</button>
+<a href="../composite_subscription/CompositeSubscription.html">CompositeSubscription</a> <strong>add</strong>(StreamSubscription subscription) <a class="anchor-link" href="#add"
+              title="Permalink to CompositeSubscription.add">#</a></h4>
+<div class="doc">
+<pre class="source">
+CompositeSubscription add(StreamSubscription subscription) {
+ this._subscriptions.add(subscription);
+ return this;
+}
+</pre>
+</div>
+</div>
+<div class="method"><h4 id="cancel">
+<button class="show-code">Code</button>
+void <strong>cancel</strong>() <a class="anchor-link" href="#cancel"
+              title="Permalink to CompositeSubscription.cancel">#</a></h4>
+<div class="doc">
+<pre class="source">
+void cancel() {
+ for (var n in this._subscriptions) {
+   n.cancel();
+ }
+ this._subscriptions = [];
+}
+</pre>
+</div>
+</div>
+<div class="method"><h4 id="contains">
+<button class="show-code">Code</button>
+bool <strong>contains</strong>(StreamSubscription subscription) <a class="anchor-link" href="#contains"
+              title="Permalink to CompositeSubscription.contains">#</a></h4>
+<div class="doc">
+<pre class="source">
+bool contains(StreamSubscription subscription) {
+ return this._subscriptions.contains(subscription);
+}
+</pre>
+</div>
+</div>
+<div class="method"><h4 id="remove">
+<button class="show-code">Code</button>
+bool <strong>remove</strong>(StreamSubscription subscription) <a class="anchor-link" href="#remove"
+              title="Permalink to CompositeSubscription.remove">#</a></h4>
+<div class="doc">
+<pre class="source">
+bool remove(StreamSubscription subscription) {
+ var index = this._subscriptions.indexOf(subscription);
+ if (index != -1) {
+   this._subscriptions.removeAt(index);
+   subscription.cancel();
+   return true;
+ } else {
+   return false;
+ }
+}
+</pre>
+</div>
+</div>
+<div class="method"><h4 id="toList">
+<button class="show-code">Code</button>
+List&lt;StreamSubscription&gt; <strong>toList</strong>() <a class="anchor-link" href="#toList"
+              title="Permalink to CompositeSubscription.toList">#</a></h4>
+<div class="doc">
+<pre class="source">
+List&lt;StreamSubscription&gt; toList() {
+ return this._subscriptions;
+}
+</pre>
+</div>
+</div>
+</div>
+        </div>
+        <div class="clear"></div>
+        </div>
+        <div class="footer">
+          <div>This page was generated at 2013-10-09 21:03:04.822</div>
+        </div>
+        <script async src="../client-live-nav.js"></script>
+        </body></html>
+        

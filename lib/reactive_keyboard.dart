@@ -160,13 +160,18 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
         bool allowAltKeyPress: false,
         bool allowEnterKeyPress: false,
         Map<int, int> navKeys: NUM_NAV,
-        List<int> delKeys: DEFAULT_DEL_KEYS
+        List<int> delKeys: DEFAULT_DEL_KEYS,
+        Stream<KeyEvent> keyPressStream,
+        Stream<KeyEvent> keyUpStream,
+        Stream<KeyEvent> keyDownStream
       })
   {
     //@todo: make sure we don't need to do anything special for input or textareas
-    var rkp = KeyboardEventStream.onKeyPress(target);
-    var rku = KeyboardEventStream.onKeyUp(target);
-    var rkd = KeyboardEventStream.onKeyDown(target).map((key) {
+    var rkp = keyPressStream != null ? keyPressStream : KeyboardEventStream.onKeyPress(target);
+    var rku = keyUpStream    != null ? keyUpStream    : KeyboardEventStream.onKeyUp(target);
+    var rkd = keyDownStream  != null ? keyDownStream  : KeyboardEventStream.onKeyDown(target);
+
+    rkd = rkd.map((key) {
       if ( delKeys.contains(key.keyCode)) {
         key.preventDefault();
       }

@@ -1,0 +1,143 @@
+        <!DOCTYPE html>
+        <html>
+        <head>
+                <meta charset="utf-8">
+        <title>observe.src.dirty_check Library / Dart Documentation</title>
+        <link rel="stylesheet" type="text/css"
+            href="styles.css">
+        <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,700,800" rel="stylesheet" type="text/css">
+        <link rel="shortcut icon" href="favicon.ico">
+        
+        </head>
+        <body data-library="observe.src.dirty_check">
+        <div class="page">
+        <div class="header">
+          <a href="index.html"><div class="logo"></div></a>
+          <a href="index.html">Dart Documentation</a>
+         &rsaquo; <a href="observe.src.dirty_check.html">observe.src.dirty_check</a>        <div id="search-box">
+          <input type="search" name="q" id="q" autocomplete="off"
+              class="search-input" placeholder="Search API">
+        </div>
+        
+      </div>
+      <div class="drop-down" id="drop-down"></div>
+      
+        <div class="nav">
+        
+</div>
+<div class="content">
+<h2><strong>observe.src.dirty_check</strong> library</h2>
+<div class="doc"><p><em>Warning</em>: this library is <strong>internal</strong>, and APIs are subject to change.</p>
+<p>Tracks observable objects for dirty checking and testing purposes.</p>
+<p>It can collect all observed objects, which can be used to trigger predictable
+delivery of all pending changes in a test, including objects allocated
+internally to another library, such as those in <code>package:mdv</code>.</p></div>
+<div>
+<h3>Properties</h3>
+<div class="field"><h4 id="allObservablesCount">
+<button class="show-code">Code</button>
+final int         <strong>allObservablesCount</strong> <a class="anchor-link"
+            href="#allObservablesCount"
+            title="Permalink to allObservablesCount">#</a>
+        </h4>
+        <div class="doc">
+<p>The number of active observables in the system. </p>
+<pre class="source">
+int get allObservablesCount =&gt; _allObservablesCount;
+</pre>
+</div>
+</div>
+<div class="field"><h4 id="MAX_DIRTY_CHECK_CYCLES">
+<button class="show-code">Code</button>
+const         <strong>MAX_DIRTY_CHECK_CYCLES</strong> <a class="anchor-link"
+            href="#MAX_DIRTY_CHECK_CYCLES"
+            title="Permalink to MAX_DIRTY_CHECK_CYCLES">#</a>
+        </h4>
+        <div class="doc">
+<pre class="source">
+const MAX_DIRTY_CHECK_CYCLES = 1000
+</pre>
+</div>
+</div>
+</div>
+<div>
+<h3>Functions</h3>
+<div class="method"><h4 id="dirtyCheckObservables">
+<button class="show-code">Code</button>
+void <strong>dirtyCheckObservables</strong>() <a class="anchor-link" href="#dirtyCheckObservables"
+              title="Permalink to dirtyCheckObservables">#</a></h4>
+<div class="doc">
+<p>Synchronously deliver all change records for known observables.</p>
+<p>This will execute <a class="crossref" href="observe/Observable.html#deliverChanges">Observable.deliverChanges</a> on objects that inherit from
+<code>ObservableMixin</code>.</p>
+<pre class="source">
+void dirtyCheckObservables() {
+ if (_delivering) return;
+ if (_allObservables == null) return;
+
+ _delivering = true;
+
+ int cycles = 0;
+ bool anyChanged = false;
+ List debugLoop = null;
+ do {
+   cycles++;
+   if (cycles == MAX_DIRTY_CHECK_CYCLES) {
+     debugLoop = [];
+   }
+
+   var toCheck = _allObservables;
+   _allObservables = &lt;Observable&gt;[];
+   anyChanged = false;
+
+   for (int i = 0; i &lt; toCheck.length; i++) {
+     final observer = toCheck[i];
+     if (observer.hasObservers) {
+       if (observer.deliverChanges()) {
+         anyChanged = true;
+         if (debugLoop != null) debugLoop.add([i, observer]);
+       }
+       _allObservables.add(observer);
+     }
+   }
+ } while (cycles &lt; MAX_DIRTY_CHECK_CYCLES &amp;&amp; anyChanged);
+
+ if (debugLoop != null &amp;&amp; anyChanged) {
+   _logger.warning('Possible loop in Observable.dirtyCheck, stopped '
+       'checking.');
+   for (final info in debugLoop) {
+     _logger.warning('In last iteration Observable changed at index '
+         '${info[0]}, object: ${info[1]}.');
+   }
+ }
+
+ _allObservablesCount = _allObservables.length;
+ _delivering = false;
+}
+</pre>
+</div>
+</div>
+<div class="method"><h4 id="registerObservable">
+<button class="show-code">Code</button>
+void <strong>registerObservable</strong>(<a href="observe/Observable.html">Observable</a> obj) <a class="anchor-link" href="#registerObservable"
+              title="Permalink to registerObservable">#</a></h4>
+<div class="doc">
+<pre class="source">
+void registerObservable(Observable obj) {
+ if (_allObservables == null) _allObservables = &lt;Observable&gt;[];
+ _allObservables.add(obj);
+ _allObservablesCount++;
+}
+</pre>
+</div>
+</div>
+</div>
+        </div>
+        <div class="clear"></div>
+        </div>
+        <div class="footer">
+          <div>This page was generated at 2013-10-09 21:03:05.889</div>
+        </div>
+        <script async src="client-live-nav.js"></script>
+        </body></html>
+        

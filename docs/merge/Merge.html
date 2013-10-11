@@ -1,0 +1,200 @@
+        <!DOCTYPE html>
+        <html>
+        <head>
+                <meta charset="utf-8">
+        <title>Merge&lt;S, T&gt; class / merge Library / Dart Documentation</title>
+        <link rel="stylesheet" type="text/css"
+            href="../styles.css">
+        <link href="//fonts.googleapis.com/css?family=Open+Sans:400,600,700,800" rel="stylesheet" type="text/css">
+        <link rel="shortcut icon" href="../favicon.ico">
+        
+        </head>
+        <body data-library="merge" data-type="Merge&amp;lt;S, T&amp;gt;">
+        <div class="page">
+        <div class="header">
+          <a href="../index.html"><div class="logo"></div></a>
+          <a href="../index.html">Dart Documentation</a>
+         &rsaquo; <a href="../merge.html">merge</a> &rsaquo; <a href="../merge/Merge.html">Merge&lt;S, T&gt;</a>        <div id="search-box">
+          <input type="search" name="q" id="q" autocomplete="off"
+              class="search-input" placeholder="Search API">
+        </div>
+        
+      </div>
+      <div class="drop-down" id="drop-down"></div>
+      
+        <div class="nav">
+        
+</div>
+<div class="content">
+        <h2><strong>Merge&lt;S, T&gt;</strong>
+          class
+        </h2>
+        
+<button id="show-inherited" class="show-inherited">Hide inherited</button>
+<div class="doc">
+<pre class="source">
+class Merge&lt;S, T&gt; extends StreamEventTransformer {
+
+ final int _concurrency;
+
+ const Merge(this._concurrency);
+
+ Stream&lt;T&gt; bind(Stream&lt;Stream&lt;S&gt;&gt; stream) {
+   var backlog       = new ListQueue();
+   var subscriptions = new CompositeSubscription();
+   return stream.transform(new FlatMap((Stream&lt;S&gt; data) {
+     var controller   = new StreamController();
+     var subscription = null;
+     subscription     = data.listen(
+       (S data) {
+         controller.add(data);
+       },
+       onError: (error) {
+         controller.addError(error);
+         subscriptions.cancel();
+       },
+       onDone: () {
+         subscriptions.remove(subscription);
+         if (backlog.length &gt; 0) {
+           backlog.removeFirst().resume();
+         }
+       }
+     );
+     if (subscriptions.toList().length &gt;= this._concurrency) {
+       subscription.pause();
+       backlog.add(subscription);
+     }
+     subscriptions.add(subscription);
+     return controller.stream;
+   }));
+ }
+
+}
+</pre>
+</div>
+<h3>Extends</h3>
+<p>
+<span class="type-box"><span class="icon-class"></span><a href="../dart_async/StreamEventTransformer.html">StreamEventTransformer</a></span>&nbsp;&gt;&nbsp;<span class="type-box"><span class="icon-class"></span><strong>Merge&lt;S, T&gt;</strong></span></p>
+<div>
+<h3>Constructors</h3>
+<div class="method"><h4 id="">
+<button class="show-code">Code</button>
+const <strong>Merge</strong>(int _concurrency) <a class="anchor-link" href="#"
+              title="Permalink to Merge&lt;S, T&gt;.Merge">#</a></h4>
+<div class="doc">
+<div class="inherited">
+<p>Create a <a class="crossref" href="../dart_async/StreamTransformer.html">StreamTransformer</a> that delegates events to the given functions.</p>
+<p>This is actually a <a class="crossref" href="../dart_async/StreamEventTransformer.html">StreamEventTransformer</a> where the event handling is
+performed by the function arguments.
+If an argument is omitted, it acts as the corresponding default method from
+<a class="crossref" href="../dart_async/StreamEventTransformer.html">StreamEventTransformer</a>.</p>
+<p>Example use:</p>
+<pre><code>stringStream.transform(new StreamTransformer&lt;String, String&gt;(
+    handleData: (String value, EventSink&lt;String&gt; sink) {
+      sink.add(value);
+      sink.add(value);  // Duplicate the incoming events.
+    }));
+</code></pre>
+<div class="docs-inherited-from">docs inherited from StreamTransformer&lt;<a href="../merge/Merge.html">S</a>, <a href="../merge/Merge.html">T</a>&gt; </div></div>
+<pre class="source">
+const Merge(this._concurrency);
+</pre>
+</div>
+</div>
+</div>
+<div>
+<h3>Methods</h3>
+<div class="method"><h4 id="bind">
+<button class="show-code">Code</button>
+Stream&lt;<a href="../merge/Merge.html">T</a>&gt; <strong>bind</strong>(Stream&lt;Stream&lt;<a href="../merge/Merge.html">S</a>&gt;&gt; stream) <a class="anchor-link" href="#bind"
+              title="Permalink to Merge&lt;S, T&gt;.bind">#</a></h4>
+<div class="doc">
+<pre class="source">
+Stream&lt;T&gt; bind(Stream&lt;Stream&lt;S&gt;&gt; stream) {
+ var backlog       = new ListQueue();
+ var subscriptions = new CompositeSubscription();
+ return stream.transform(new FlatMap((Stream&lt;S&gt; data) {
+   var controller   = new StreamController();
+   var subscription = null;
+   subscription     = data.listen(
+     (S data) {
+       controller.add(data);
+     },
+     onError: (error) {
+       controller.addError(error);
+       subscriptions.cancel();
+     },
+     onDone: () {
+       subscriptions.remove(subscription);
+       if (backlog.length &gt; 0) {
+         backlog.removeFirst().resume();
+       }
+     }
+   );
+   if (subscriptions.toList().length &gt;= this._concurrency) {
+     subscription.pause();
+     backlog.add(subscription);
+   }
+   subscriptions.add(subscription);
+   return controller.stream;
+ }));
+}
+</pre>
+</div>
+</div>
+<div class="method inherited"><h4 id="handleData">
+<button class="show-code">Code</button>
+void <strong>handleData</strong>(<a href="../merge/Merge.html">S</a> event, EventSink&lt;<a href="../merge/Merge.html">T</a>&gt; sink) <a class="anchor-link" href="#handleData"
+              title="Permalink to Merge&lt;S, T&gt;.handleData">#</a></h4>
+<div class="inherited-from">inherited from StreamEventTransformer </div><div class="doc">
+<p>Act on incoming data event.</p>
+<p>The method may generate any number of events on the sink, but should
+not throw.</p>
+<pre class="source">
+void handleData(S event, EventSink&lt;T&gt; sink) {
+ var data = event;
+ sink.add(data);
+}
+</pre>
+</div>
+</div>
+<div class="method inherited"><h4 id="handleDone">
+<button class="show-code">Code</button>
+void <strong>handleDone</strong>(EventSink&lt;<a href="../merge/Merge.html">T</a>&gt; sink) <a class="anchor-link" href="#handleDone"
+              title="Permalink to Merge&lt;S, T&gt;.handleDone">#</a></h4>
+<div class="inherited-from">inherited from StreamEventTransformer </div><div class="doc">
+<p>Act on incoming done event.</p>
+<p>The method may generate any number of events on the sink, but should
+not throw.</p>
+<pre class="source">
+void handleDone(EventSink&lt;T&gt; sink){
+ sink.close();
+}
+</pre>
+</div>
+</div>
+<div class="method inherited"><h4 id="handleError">
+<button class="show-code">Code</button>
+void <strong>handleError</strong>(error, EventSink&lt;<a href="../merge/Merge.html">T</a>&gt; sink) <a class="anchor-link" href="#handleError"
+              title="Permalink to Merge&lt;S, T&gt;.handleError">#</a></h4>
+<div class="inherited-from">inherited from StreamEventTransformer </div><div class="doc">
+<p>Act on incoming error event.</p>
+<p>The method may generate any number of events on the sink, but should
+not throw.</p>
+<pre class="source">
+void handleError(error, EventSink&lt;T&gt; sink) {
+ sink.addError(error);
+}
+</pre>
+</div>
+</div>
+</div>
+        </div>
+        <div class="clear"></div>
+        </div>
+        <div class="footer">
+          <div>This page was generated at 2013-10-09 21:03:05.111</div>
+        </div>
+        <script async src="../client-live-nav.js"></script>
+        </body></html>
+        
