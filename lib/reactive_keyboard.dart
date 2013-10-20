@@ -381,10 +381,10 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
         };
       };
 
-      var shiftFilter = (List tuple) {
-        return !_SPECIAL_KEYS.containsKey(code) &&
-               allowShiftOnlyHotKeys &&
-               !hk.startsWith('shift+');
+      var finalFilter = (List tuple) {
+        return (_SPECIAL_KEYS.containsKey(tuple[1].keyCode) ||
+               (allowShiftOnlyHotKeys && !hk.startsWith('shift+'))) &&
+               (hk.length > 0 && !hk.endsWith('+'));
       };
 
       return rawKeyCombinedStream
