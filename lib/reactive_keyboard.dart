@@ -24,10 +24,6 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   String _lineBuffer = '';
   String _htmlLineBuffer = '';
 
-  Stream<String> _keyStream;
-  Stream<int>    _navStream;
-  Stream<String> _hotKeyStream;
-
   Map<String, Stream> _streamMemos;
 
   // DOM event types consts
