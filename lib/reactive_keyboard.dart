@@ -28,6 +28,8 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   Stream<int>    _navStream;
   Stream<String> _hotKeyStream;
 
+  Map<String, Stream> _streamMemos;
+
   // DOM event types consts
   static const String KEY_PRESS = 'keypress';
   static const String KEY_UP    = 'keyup';
@@ -247,15 +249,13 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * in the constructor
    */
   Stream<String> get keyStream {
-    if (_keyStream == null) {
-      _keyStream = rawKeyCombinedStream.where((key) {
+    return _streamMemos.putIfAbsent("key", () {
+      return rawKeyCombinedStream.where((key) {
         return (key.type == KEY_PRESS && !key.ctrlKey
             && ( !key.altKey || (allowAltKeyPress && key.altKey))
             && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode)));
       }).map((key) => new String.fromCharCode(key.charCode));
-    }
-
-    return _keyStream;
+    });
   }
 
   /**
@@ -325,13 +325,11 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * `navKeys` parameter used to construct this object.
    */
   Stream<int> get navStream {
-    if (_navStream == null) {
-      _navStream = rawKeyCombinedStream.where((key) {
+    return _streamMemos.putIfAbsent("nav", () {
+      return rawKeyCombinedStream.where((key) {
         return key.type == KEY_DOWN && navKeys.containsKey(key.keyCode);
       }).map((key) => navKeys[key.keyCode]);
-    }
-
-    return _navStream;
+    });
   }
 
 
@@ -343,59 +341,69 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    * such that they are prefixed by their modifiers.
    */
   Stream<String> get hotKeyStream {
-    if (_hotKeyStream == null) {
-      var hotKeyTransformer = new StreamTransformer(handleData: (KeyEvent key, sink) {
-        var hk = '';
+    return _streamMemos.putIfAbsent("hotKey", () {
+      var isKeyUp = (KeyEvent key) => key.type == KEY_UP;
 
-        if (key.type == KEY_UP) {
-          if (key.altKey) {
-            hk += 'alt+';
-          }
-          if (key.altGraphKey) {
-            hk += 'altgr+';
-          }
-          if (key.ctrlKey) {
-            hk += 'ctrl+';
-          }
-          if (key.metaKey) {
-            hk += 'meta+';
-          }
-          if (key.shiftKey) {
-            hk += 'shift+';
-          }
+      var normalizer = (KeyEvent key) => [key, ""];
 
-          if (hk.length > 0) {
-            if ((
-                key.keyCode >= 'A'.codeUnitAt(0)
-                && key.keyCode <= 'Z'.codeUnitAt(0)
-              ) ||
-              (
-                key.keyCode >= '0'.codeUnitAt(0)
-                && key.keyCode <= '9'.codeUnitAt(0)
-              )
-             ) {
-              hk += new String.fromCharCode(key.keyCode);
-            } else if (_COMBO_KEYS.containsKey(key.keyCode)) {
-              hk += _COMBO_KEYS[key.keyCode];
-            }
+      var modifier = (String modifier, Function predicate) {
+        return (List tuple) {
+          if (predicate(tuple[1])) {
+            return [tuple[0], tuple[1] + modifier + '+'];
+          } else {
+            return tuple;
           }
+        };
+      };
 
-          if (_SPECIAL_KEYS.containsKey(key.keyCode)) {
-            hk += _SPECIAL_KEYS[key.keyCode];
-          } else if (!allowShiftOnlyHotKeys && hk.startsWith('shift+')) {
-            hk = '';
+      var ifHasModifiers = (Function success) {
+        return (List tuple) {
+          if (tuple[1].length > 0) {
+            return success(tuple);
+          } else {
+            return tuple;
           }
+        };
+      };
 
-          if (hk.length > 0 && !hk.endsWith('+')) {
-            sink.add(hk);
+      var characterCodeInRange = (String start, String end, Int n) {
+        return n >= start.codeUnitAt(0) && n <= end.codeUnitAt(0);
+      };
+
+      var isAlphaNumeric = (Int code) {
+        return characterCodeInRange('A', 'Z', code) ||
+               characterCodeInRange('0', '9', code);
+      };
+
+      var addIf = (Function predicate) {
+        return (List tuple) {
+          if (predicate(tuple[1].keyCode)) {
+            return [tuple[0], tuple[1] + new String.fromCharCode(key.keyCode)];
+          } else {
+            return tuple;
           }
-        }
-      });
+        };
+      };
 
-      _hotKeyStream = rawKeyCombinedStream.transform(hotKeyTransformer);
-    }
+      var shiftFilter = (List tuple) {
+        return !_SPECIAL_KEYS.containsKey(code) &&
+               allowShiftOnlyHotKeys &&
+               !hk.startsWith('shift+');
+      };
 
-    return _hotKeyStream;
+      return rawKeyCombinedStream
+        .where(isKeyUp)
+        .map(normalizer)
+        .map(modifier("alt", (KeyEvent key) => key.altKey))
+        .map(modifier("altgr", (KeyEvent key) => key.altGraphKey))
+        .map(modifier("ctrl", (KeyEvent key) => key.ctrlKey))
+        .map(modifier("meta", (KeyEvent key) => key.metaKey))
+        .map(modifier("shift", (KeyEvent key) => key.shiftKey))
+        .map(ifHasModifiers(addIf((Int code) => isAlphaNumeric(code))))
+        .map(ifHasModifiers(addIf((Int code) => _COMBO_KEYS.containsKey(code))))
+        .map(addIf((Int code) => _SPECIAL_KEYS.containsKey(code)))
+        .where(shiftFilter);
+    });
   }
 
 }
