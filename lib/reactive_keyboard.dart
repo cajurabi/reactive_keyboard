@@ -398,7 +398,7 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
         .map(ifHasModifiers(addIf((Int code) => isAlphaNumeric(code))))
         .map(ifHasModifiers(addIf((Int code) => _COMBO_KEYS.containsKey(code))))
         .map(addIf((Int code) => _SPECIAL_KEYS.containsKey(code)))
-        .where(shiftFilter);
+        .where(finalFilter);
     });
   }
 
