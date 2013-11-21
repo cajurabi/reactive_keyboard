@@ -1,5 +1,5 @@
 name: reactive_keyboard
-version: 0.1.9
+version: 0.1.10
 author: Chris Jones
 description: Helper library for handling Keyboard streams.
 dependencies:
@@ -7,3 +7,4 @@ dependencies:
   merge_all:
     git: https://github.com/cajurabi/dart-merge-all.git
   observe: any
+  stream_ext: any

@@ -5,15 +5,16 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:observe/observe.dart';
 
-import 'package:merge_all/merge_all.dart';
+import 'package:stream_ext/stream_ext.dart';
+//import 'package:merge_all/merge_all.dart';
 
 
-class ReactiveKeyboard extends ChangeNotifierMixin {
+class ReactiveKeyboard extends Observable with ChangeNotifier {
   final Element _target;
-  final Stream<KeyEvent> rawKeyCombinedStream;
-  final Stream<KeyEvent> rawKeyUpStream;
-  final Stream<KeyEvent> rawKeyDownStream;
-  final Stream<KeyEvent> rawKeyPressStream;
+  final Stream<KeyboardEvent> rawKeyCombinedStream;
+  final Stream<KeyboardEvent> rawKeyUpStream;
+  final Stream<KeyboardEvent> rawKeyDownStream;
+  final Stream<KeyboardEvent> rawKeyPressStream;
 
   bool allowShiftOnlyHotKeys;
   bool allowAltKeyPress;
@@ -24,7 +25,7 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
   String _lineBuffer = '';
   String _htmlLineBuffer = '';
 
-  Map<String, Stream> _streamMemos;
+  Map<String, Stream> _streamMemos = {};
 
   // DOM event types consts
   static const String KEY_PRESS = 'keypress';
@@ -159,25 +160,30 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
         bool allowEnterKeyPress: false,
         Map<int, int> navKeys: NUM_NAV,
         List<int> delKeys: DEFAULT_DEL_KEYS,
-        Stream<KeyEvent> keyPressStream,
-        Stream<KeyEvent> keyUpStream,
-        Stream<KeyEvent> keyDownStream
+        Stream<KeyboardEvent> keyPressStream,
+        Stream<KeyboardEvent> keyUpStream,
+        Stream<KeyboardEvent> keyDownStream
       })
   {
     //@todo: make sure we don't need to do anything special for input or textareas
-    var rkp = keyPressStream != null ? keyPressStream : KeyboardEventStream.onKeyPress(target);
-    var rku = keyUpStream    != null ? keyUpStream    : KeyboardEventStream.onKeyUp(target);
-    var rkd = keyDownStream  != null ? keyDownStream  : KeyboardEventStream.onKeyDown(target);
+
+    var rkp = keyPressStream != null ? keyPressStream : target.onKeyPress;
+    var rku = keyUpStream    != null ? keyUpStream    : target.onKeyUp;
+    var rkd = keyDownStream  != null ? keyDownStream  : target.onKeyDown;
 
     rkd = rkd.map((key) {
-      if ( delKeys.contains(key.keyCode)) {
+      if (delKeys.contains(key.keyCode)) {
         key.preventDefault();
       }
 
       return key;
     });
 
-    var rkc = rkp.transform(new MergeAll(3, [rku, rkd])).asBroadcastStream();
+    var rkc = StreamExt.merge(rkp, rku);
+    rkc = StreamExt.merge(rkc, rkd);
+    rkc = rkc.asBroadcastStream();
+
+//    var rkc = rkp.transform(new MergeAll(3, [rku, rkd])).asBroadcastStream();
 
     return new ReactiveKeyboard._(
       target,
@@ -295,7 +301,7 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
       var _line = lineBuffer;
       var THIS = this;
 
-      lineTransformer = new StreamTransformer(handleData: (key, sink) {
+      lineTransformer = new StreamTransformer.fromHandlers(handleData: (key, sink) {
         if (key.type == KEY_PRESS
             && (allowEnterKeyPress || !_ENTER_KEYS.contains(key.keyCode))) {
           THIS.lineBuffer = _line += new String.fromCharCode(key.charCode);
@@ -338,13 +344,13 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
    */
   Stream<String> get hotKeyStream {
     return _streamMemos.putIfAbsent("hotKey", () {
-      var isKeyUp = (KeyEvent key) => key.type == KEY_UP;
+      var isKeyUp = (KeyboardEvent key) => key.type == KEY_UP;
 
-      var normalizer = (KeyEvent key) => [key, ""];
+      var normalizer = (KeyboardEvent key) => [key, ""];
 
       var modifier = (String modifier, Function predicate) {
         return (List tuple) {
-          if (predicate(tuple[1])) {
+          if (predicate(tuple[0])) {
             return [tuple[0], tuple[1] + modifier + '+'];
           } else {
             return tuple;
@@ -362,19 +368,20 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
         };
       };
 
-      var characterCodeInRange = (String start, String end, Int n) {
+      var characterCodeInRange = (String start, String end, int n) {
         return n >= start.codeUnitAt(0) && n <= end.codeUnitAt(0);
       };
 
-      var isAlphaNumeric = (Int code) {
+      var isAlphaNumeric = (int code) {
         return characterCodeInRange('A', 'Z', code) ||
                characterCodeInRange('0', '9', code);
       };
 
       var addIf = (Function predicate) {
         return (List tuple) {
-          if (predicate(tuple[1].keyCode)) {
-            return [tuple[0], tuple[1] + new String.fromCharCode(key.keyCode)];
+          if (predicate(tuple[0].keyCode)) {
+            return [tuple[0],
+                tuple[1] + new String.fromCharCode(tuple[0].keyCode)];
           } else {
             return tuple;
           }
@@ -382,23 +389,33 @@ class ReactiveKeyboard extends ChangeNotifierMixin {
       };
 
       var finalFilter = (List tuple) {
-        return (_SPECIAL_KEYS.containsKey(tuple[1].keyCode) ||
-               (allowShiftOnlyHotKeys && !hk.startsWith('shift+'))) &&
-               (hk.length > 0 && !hk.endsWith('+'));
+        return (
+            _SPECIAL_KEYS.containsKey(tuple[0].keyCode)
+              || (
+                  allowShiftOnlyHotKeys
+                  || !tuple[1].startsWith('shift+')
+              )
+            ) && (
+                tuple[1].length > 0
+                && !tuple[1].endsWith('+')
+        );
+
       };
 
       return rawKeyCombinedStream
         .where(isKeyUp)
         .map(normalizer)
-        .map(modifier("alt", (KeyEvent key) => key.altKey))
-        .map(modifier("altgr", (KeyEvent key) => key.altGraphKey))
-        .map(modifier("ctrl", (KeyEvent key) => key.ctrlKey))
-        .map(modifier("meta", (KeyEvent key) => key.metaKey))
-        .map(modifier("shift", (KeyEvent key) => key.shiftKey))
-        .map(ifHasModifiers(addIf((Int code) => isAlphaNumeric(code))))
-        .map(ifHasModifiers(addIf((Int code) => _COMBO_KEYS.containsKey(code))))
-        .map(addIf((Int code) => _SPECIAL_KEYS.containsKey(code)))
-        .where(finalFilter);
+        .map(modifier("alt", (KeyboardEvent key) => key.altKey))
+        .map(modifier("altgr", (KeyboardEvent key) => key.altGraphKey))
+        .map(modifier("ctrl", (KeyboardEvent key) => key.ctrlKey))
+        .map(modifier("meta", (KeyboardEvent key) => key.metaKey))
+        .map(modifier("shift", (KeyboardEvent key) => key.shiftKey))
+        .map(ifHasModifiers(addIf((int code) => isAlphaNumeric(code))))
+        .map(ifHasModifiers(addIf((int code) => _COMBO_KEYS.containsKey(code))))
+        .map((List tuple) => _SPECIAL_KEYS.containsKey(tuple[0].keyCode) ?
+            [tuple[0], tuple[1] + _SPECIAL_KEYS[tuple[0].keyCode]] : tuple)
+        .where(finalFilter)
+        .map((List tuple) => tuple[1]);
     });
   }
 
