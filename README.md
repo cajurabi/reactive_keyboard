@@ -3,12 +3,26 @@
 
 ## Usage
 
+The Factory constructor for making a new ReactiveKeyboard object
+
+Takes a target element to observe keyboard events from and some named
+parameters to aid in the configuration of the ReactiveKeyboard. Optional
+named argmuments are as follows:
+* allowShiftOnlyHotKeys = `false`: Whether or not to capture shift only
+  hot key modifiers--excludes _shift_+`_SPECIAL_KEYS`
+* allowAltKeyPress = `false`: Whether or not to allow _alt_ key presses
+  through the `keyStream`
+* allowEnterKeyPress = `false`: Whether or not to include the enter key
+  as part of the line for the `lineStream`
+* navKeys = `NUM_NAV`: A map of keys to filter for in the `navStream`
+* delKeys = `DEFAULT_DEL_KEYS`
+
 ```dart
 import 'dart:html';
 import 'package:reactive_keyboard/reactive_keyboard.dart';
 
 void main() {
-  var keyboard = new ReactiveKeyboard(query('body'));
+  var keyboard = new ReactiveKeyboard(querySelector('body'));
 
   keyboard.keyStream.listen((str) => print(str));
   keyboard.lineStream.listen((str) => print(str));
