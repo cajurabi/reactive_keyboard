@@ -179,9 +179,7 @@ class ReactiveKeyboard extends Observable with ChangeNotifier {
       return key;
     });
 
-    var rkc = StreamExt.merge(rkp, rku);
-    rkc = StreamExt.merge(rkc, rkd);
-    rkc = rkc.asBroadcastStream();
+    var rkc = StreamExt.merge(StreamExt.merge(rkp, rku), rkd).asBroadcastStream();
 
 //    var rkc = rkp.transform(new MergeAll(3, [rku, rkd])).asBroadcastStream();
 
